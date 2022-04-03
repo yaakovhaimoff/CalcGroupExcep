@@ -40,21 +40,15 @@ void SetCalculator::read()
 	std::ifstream file;
 	file.open(read);
 
-	auto ss = std::istringstream();
-	auto readCalc = SetCalculator(ss, std::cout);
-	readCalc.m_operations = this->m_operations;
 	auto line = std::string();
-
-	try {
-		while (std::getline(file, line))
-		{
-			std::cout << line << std::endl;
-			ss = std::istringstream(line);
-			readCalc.run();
-		}
-		file.close();
+	
+	while (!file.eof())
+	{
+		auto readCalc = SetCalculator(file, std::cout);
+		readCalc.m_operations = this->m_operations;
+		readCalc.run();
 	}
-	catch (std::ios_base::failure&) {ss.clear(); std::cerr << "abc"; }
+
 }
 
 void SetCalculator::resize()
