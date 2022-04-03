@@ -11,10 +11,12 @@ class Operation;
 class SetCalculator
 {
 public:
-    SetCalculator(std::istream& istr, std::ostream& ostr);
+    SetCalculator(std::istream&, std::ostream&);
     void run();
 
 private:
+    void read();
+    void resize();
     void eval();
     void del();
     void help();
@@ -34,6 +36,8 @@ private:
     enum class Action
     {
         Invalid,
+        Read,       //
+        Resize,     //
         Eval,
         Union,
         Intersection,
@@ -58,6 +62,7 @@ private:
     const ActionMap m_actions;
     OperationList m_operations;
     bool m_running = true;
+
     std::istream& m_istr;
     std::ostream& m_ostr;
 
