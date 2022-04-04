@@ -24,31 +24,33 @@ void SetCalculator::run()
 {
 	do
 	{
-		m_ostr << '\n';
-		printOperations();
-		m_ostr << "Enter command ('help' for the list of available commands): ";
-		const auto action = readAction();
-		runAction(action);
-	} while (m_running);
+		try {
+			m_ostr << '\n';
+			printOperations();
+			m_ostr << "Enter command ('help' for the list of available commands): ";
+			const auto action = readAction();
+			runAction(action);
+		}
+		catch (std::ios_base::failure& e) { std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); }
+	} while (m_running && !m_istr.eof());
 }
 
 void SetCalculator::read()
 {
-	auto read = std::string();
-	m_istr >> read;
+	auto filePath = std::string();
+	m_istr >> filePath;
 
 	std::ifstream file;
-	file.open(read);
-
-	auto line = std::string();
-	
+	file.open(filePath);
+	auto readCalc = SetCalculator(file, std::cout);
+	readCalc.m_operations = this->m_operations;
+	//std::cin.exceptions(std::ios::failbit | std::ios::badbit);
 	while (!file.eof())
 	{
-		auto readCalc = SetCalculator(file, std::cout);
-		readCalc.m_operations = this->m_operations;
 		readCalc.run();
 	}
-
+	this->m_operations = readCalc.m_operations;
+	//catch (std::ios_base::failure& e) { std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); }
 }
 
 void SetCalculator::resize()
