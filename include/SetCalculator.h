@@ -5,16 +5,22 @@
 #include <string>
 #include <iosfwd>
 #include <optional>
+#include "MyExcep.h"
+
+const int max = 100;
+const int min = 3;
 
 class Operation;
 
 class SetCalculator
 {
 public:
-    SetCalculator(std::istream&, std::ostream&);
+    SetCalculator(std::istream&, std::ostream&, const bool);
     void run();
 
 private:
+    void setMaxNumOfOperations();
+    void runAction();
     void read();
     void resize();
     void eval();
@@ -36,8 +42,8 @@ private:
     enum class Action
     {
         Invalid,
-        Read,       //
-        Resize,     //
+        Read,       
+        Resize,     
         Eval,
         Union,
         Intersection,
@@ -61,14 +67,18 @@ private:
 
     const ActionMap m_actions;
     OperationList m_operations;
+    
     bool m_running = true;
-
+    bool m_user = true;
+    int m_maxSizeOfOperations = 0;
+    
     std::istream& m_istr;
     std::ostream& m_ostr;
 
     std::optional<int> readOperationIndex() const;
     Action readAction() const;
     void runAction(Action action);
+    bool checkNumOfOperation()const;
 
     static ActionMap createActions();
     static OperationList createOperations();

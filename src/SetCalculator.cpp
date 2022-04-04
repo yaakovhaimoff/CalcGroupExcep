@@ -13,26 +13,59 @@
 #include <ostream>
 #include <sstream>
 #include <algorithm>
+#include <exception>
 
 namespace rng = std::ranges;
 
-SetCalculator::SetCalculator(std::istream& istr, std::ostream& ostr)
-	: m_actions(createActions()), m_operations(createOperations()), m_istr(istr), m_ostr(ostr)
+SetCalculator::SetCalculator(std::istream& istr, std::ostream& ostr, const bool user)
+	: m_actions(createActions()), m_operations(createOperations()),
+	m_istr(istr), m_ostr(ostr), m_user(user)
 {}
 
 void SetCalculator::run()
 {
-	do
-	{
+	do {
+		m_istr.exceptions(std::ios::failbit | std::ios::badbit);
 		try {
+			if (m_user)
+				setMaxNumOfOperations();
 			m_ostr << '\n';
 			printOperations();
 			m_ostr << "Enter command ('help' for the list of available commands): ";
-			const auto action = readAction();
-			runAction(action);
+			runAction();
 		}
-		catch (std::ios_base::failure& e) { std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); }
+		catch (std::ios_base::failure& e) {
+			std::cout << "#error you need to input a number\n";
+			m_istr.clear();
+			m_istr.ignore();
+		}
+		catch (MyExcep& s) { std::cout << s.what(); }
+		catch (std::invalid_argument& s) { std::cout << s.what(); m_istr.clear(); m_istr.ignore(); }
 	} while (m_running && !m_istr.eof());
+}
+
+void SetCalculator::setMaxNumOfOperations()
+{
+	while (true)
+	{
+		m_ostr << "enter the amount of opertaions you want:\n";
+		m_istr >> m_maxSizeOfOperations;
+		if (!checkNumOfOperation())
+			throw std::invalid_argument("#error your number of operation needs to be between 3-100\n");
+		m_user = false;
+		break;
+	}
+}
+
+void SetCalculator::runAction()
+{
+	const auto action = readAction();
+	runAction(action);
+}
+
+bool SetCalculator::checkNumOfOperation()const
+{
+	return m_maxSizeOfOperations < max&& m_maxSizeOfOperations > min;
 }
 
 void SetCalculator::read()
@@ -42,15 +75,14 @@ void SetCalculator::read()
 
 	std::ifstream file;
 	file.open(filePath);
-	auto readCalc = SetCalculator(file, std::cout);
-	readCalc.m_operations = this->m_operations;
-	//std::cin.exceptions(std::ios::failbit | std::ios::badbit);
+	auto readCalc = SetCalculator(file, std::cout, false);
+	readCalc.m_operations = this->m_operations;	
+	
 	while (!file.eof())
 	{
 		readCalc.run();
 	}
 	this->m_operations = readCalc.m_operations;
-	//catch (std::ios_base::failure& e) { std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); }
 }
 
 void SetCalculator::resize()

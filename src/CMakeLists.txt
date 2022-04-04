@@ -10,4 +10,5 @@
                                               "Intersection.cpp"
                                               "Difference.cpp"
                                               "Product.cpp"
-                                              "Comp.cpp")
+                                              "Comp.cpp"
+                                              "MyExcep.cpp")
