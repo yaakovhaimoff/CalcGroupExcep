@@ -20,6 +20,8 @@ public:
 
 private:
     void setMaxNumOfOperations();
+    void deleteRestOperations();
+    void setOldSize(const int);
     void runAction();
     void read();
     void resize();
@@ -70,6 +72,7 @@ private:
     
     bool m_running = true;
     bool m_user = true;
+    bool m_fileNotOpen = false;
     int m_maxSizeOfOperations = 0;
     
     std::istream& m_istr;
@@ -78,6 +81,7 @@ private:
     std::optional<int> readOperationIndex() const;
     Action readAction() const;
     void runAction(Action action);
+    void checkIfAddedOperation();
     bool checkNumOfOperation()const;
 
     static ActionMap createActions();

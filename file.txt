@@ -1,6 +1,8 @@
 eval 0 2 32 3 4 1 2 3 4
-uni 0 0 
-del 0 0
-del 0
-diff 0 0
+uni 0 0
+diff 0 1
+comp 1 3
+uni 0 1
 eval 0 2 2 3 1 4
+resize 10 y
+read C:\Users\roibe\Desktop\exps\file2.txt
