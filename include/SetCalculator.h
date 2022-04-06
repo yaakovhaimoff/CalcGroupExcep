@@ -73,7 +73,9 @@ private:
     bool m_running = true;
     bool m_user = true;
     bool m_fileNotOpen = false;
+    bool m_readingInFile = false;
     int m_maxSizeOfOperations = 0;
+    int m_lineInFile = 0;
     
     std::istream& m_istr;
     std::ostream& m_ostr;
@@ -83,7 +85,7 @@ private:
     void runAction(Action action);
     void checkIfAddedOperation();
     bool checkNumOfOperation()const;
-
+    void handleErrorInFile();
     static ActionMap createActions();
     static OperationList createOperations();
 };

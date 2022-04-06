@@ -35,19 +35,30 @@ void SetCalculator::run()
 			m_ostr << "Enter command ('help' for the list of available commands): ";
 			runAction();
 			checkIfAddedOperation();
+			if (m_readingInFile) m_lineInFile++;
 		}
-
-		catch (std::ios_base::failure& e) {
+		catch (std::ios_base::failure& e) { 
 			m_istr.clear();
 			m_istr.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-			m_fileNotOpen ? m_ostr << e.what() :
-				m_ostr << "#error you need to input a number\n";
+			m_fileNotOpen ? m_ostr << e.what() : m_ostr << "#error you need to input a number\n";
 			m_fileNotOpen = false;
+			if (m_readingInFile)
+				handleErrorInFile();
 		}
 		catch (std::out_of_range& s) { m_ostr << s.what(); }
 		catch (std::invalid_argument& s) { m_ostr << s.what(); m_istr.clear(); m_istr.ignore(); }
 
 	} while (m_running && !m_istr.eof());
+}
+ 
+void SetCalculator::handleErrorInFile()
+{
+	m_ostr << "error in line " << ++m_lineInFile << "\n";
+	char proceed;
+	m_ostr << "Do you want to proceed reading the file? (y/n): ";
+	std::cin >> proceed;
+	if (proceed == 'n')
+		m_running = false;
 }
 
 void SetCalculator::checkIfAddedOperation()
@@ -95,13 +106,12 @@ void SetCalculator::read()
 		throw std::ios::failure("file does't exist\n");
 	}
 	auto readCalc = SetCalculator(file, std::cout, false);
+	readCalc.m_readingInFile = true;
 	readCalc.m_operations = m_operations;
 	readCalc.m_maxSizeOfOperations = m_maxSizeOfOperations;
-	while (!file.eof())
-	{
-		readCalc.run();
-	}
+	readCalc.run();
 	m_operations = readCalc.m_operations;
+	m_maxSizeOfOperations = readCalc.m_maxSizeOfOperations;
 }
 
 void SetCalculator::resize()
@@ -186,10 +196,8 @@ std::optional<int> SetCalculator::readOperationIndex() const
 	auto i = 0;
 	m_istr >> i;
 	if (i >= m_operations.size())
-	{
-		m_ostr << "Operation #" << i << " doesn't exist\n";
-		return {};
-	}
+		throw std::invalid_argument("Operation " + std::to_string(i) + " doesn't exist\n");
+
 	return i;
 }
 
@@ -211,12 +219,11 @@ void SetCalculator::runAction(Action action)
 	switch (action)
 	{
 	default:
-		m_ostr << "Unknown enum entry used!\n";
+		throw std::invalid_argument("Unknown enum entry used!\n");
 		break;
 
 	case Action::Invalid:
-		m_ostr << "Command not found\n";
-		break;
+		throw std::invalid_argument("Command not found\n");
 
 	case Action::Read:         read();                     break;
 	case Action::Resize:       resize();                   break;
