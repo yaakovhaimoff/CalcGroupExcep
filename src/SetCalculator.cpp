@@ -44,7 +44,6 @@ void SetCalculator::run()
 				m_ostr << "#error you need to input a number\n";
 			m_fileNotOpen = false;
 		}
-		//catch (std::ifstream::failure& e) { m_ostr << e.what(); }
 		catch (std::out_of_range& s) { m_ostr << s.what(); }
 		catch (std::invalid_argument& s) { m_ostr << s.what(); m_istr.clear(); m_istr.ignore(); }
 
