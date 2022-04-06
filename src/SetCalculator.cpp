@@ -37,7 +37,7 @@ void SetCalculator::run()
 			checkIfAddedOperation();
 			if (m_readingInFile) m_lineInFile++;
 		}
-		catch (std::ios_base::failure& e) { 
+		catch (std::ios_base::failure& e) {
 			m_istr.clear();
 			m_istr.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			m_fileNotOpen ? m_ostr << e.what() : m_ostr << "#error you need to input a number\n";
@@ -50,7 +50,7 @@ void SetCalculator::run()
 
 	} while (m_running && !m_istr.eof());
 }
- 
+
 void SetCalculator::handleErrorInFile()
 {
 	m_ostr << "error in line " << ++m_lineInFile << "\n";
