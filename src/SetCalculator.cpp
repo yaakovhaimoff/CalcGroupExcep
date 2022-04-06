@@ -33,27 +33,33 @@ void SetCalculator::run()
 			m_ostr << '\n';
 			printOperations();
 			m_ostr << "Enter command ('help' for the list of available commands): ";
+			if (m_readingInFile) m_lineInFile++;
 			runAction();
 			checkIfAddedOperation();
-			if (m_readingInFile) m_lineInFile++;
 		}
-		catch (std::ios_base::failure& e) {
-			m_istr.clear();
-			m_istr.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-			m_fileNotOpen ? m_ostr << e.what() : m_ostr << "#error you need to input a number\n";
-			m_fileNotOpen = false;
-			if (m_readingInFile)
-				handleErrorInFile();
+		catch (std::ios_base::failure& e) { catchIosBase(e.what()); }
+		catch (std::out_of_range& s) { m_ostr << s.what(); if (m_readingInFile) handleErrorInFile(); }
+		catch (std::invalid_argument& s) {
+			m_ostr << s.what(); m_istr.clear(); m_istr.ignore();
+			if (m_readingInFile) handleErrorInFile();
 		}
-		catch (std::out_of_range& s) { m_ostr << s.what(); }
-		catch (std::invalid_argument& s) { m_ostr << s.what(); m_istr.clear(); m_istr.ignore(); }
 
 	} while (m_running && !m_istr.eof());
 }
 
+void SetCalculator::catchIosBase(const char* message)
+{
+	m_istr.clear();
+	m_istr.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	m_fileNotOpen ? m_ostr << message : m_ostr << "#error you need to input a number\n";
+	m_fileNotOpen = false;
+	if (m_readingInFile)
+		handleErrorInFile();
+}
+
 void SetCalculator::handleErrorInFile()
 {
-	m_ostr << "error in line " << ++m_lineInFile << "\n";
+	m_ostr << "\nerror in line " << m_lineInFile << "\n";
 	char proceed;
 	m_ostr << "Do you want to proceed reading the file? (y/n): ";
 	std::cin >> proceed;
@@ -66,8 +72,10 @@ void SetCalculator::checkIfAddedOperation()
 	if (m_maxSizeOfOperations < m_operations.size())
 	{
 		m_operations.resize(m_operations.size() - 1);
-		throw std::out_of_range("you have reached the maximum operations.\n");
+		m_ostr << "Number of Maximum operations: " << m_maxSizeOfOperations << "\n";
+		throw std::out_of_range("you have reached the maximum operations.\ndelete operations in order to add more");
 	}
+
 }
 
 void SetCalculator::setMaxNumOfOperations()
@@ -77,7 +85,7 @@ void SetCalculator::setMaxNumOfOperations()
 		m_ostr << "Enter size of opertaions:\n";
 		m_istr >> m_maxSizeOfOperations;
 		if (!checkNumOfOperation())
-			throw std::invalid_argument("#error - number of operations between 3-100\n");
+			throw std::out_of_range("#error - number of operations between 3-100\n");
 		m_user = false;
 		break;
 	}
@@ -96,20 +104,41 @@ bool SetCalculator::checkNumOfOperation()const
 
 void SetCalculator::read()
 {
+	std::ifstream file = openFile();
+	checkIfFileOpened(file);
+	auto readCalc = SetCalculator(file, std::cout, false);
+	runFile(readCalc);
+	setCalcBackToUser(readCalc);
+}
+
+SetCalculator::OpenFile SetCalculator::openFile()
+{
 	auto filePath = std::string();
 	m_istr >> filePath;
 	std::ifstream file;
 	file.open(filePath);
+	return file;
+}
+
+void SetCalculator::checkIfFileOpened(std::ifstream& file)
+{
 	if (!file)
 	{
 		m_fileNotOpen = true;
-		throw std::ios::failure("file does't exist\n");
+		throw std::ios::failure("file didn't open\n");
 	}
-	auto readCalc = SetCalculator(file, std::cout, false);
-	readCalc.m_readingInFile = true;
-	readCalc.m_operations = m_operations;
-	readCalc.m_maxSizeOfOperations = m_maxSizeOfOperations;
-	readCalc.run();
+}
+
+void SetCalculator::runFile(SetCalculator& fileCalc)
+{
+	fileCalc.m_readingInFile = true;
+	fileCalc.m_operations = m_operations;
+	fileCalc.m_maxSizeOfOperations = m_maxSizeOfOperations;
+	fileCalc.run();
+}
+
+void SetCalculator::setCalcBackToUser(const SetCalculator& readCalc)
+{
 	m_operations = readCalc.m_operations;
 	m_maxSizeOfOperations = readCalc.m_maxSizeOfOperations;
 }
@@ -135,6 +164,8 @@ void SetCalculator::deleteRestOperations()
 void SetCalculator::setOldSize(const int maxNumOperations)
 {
 	m_maxSizeOfOperations = maxNumOperations - 1;
+	if (m_readingInFile)
+		m_istr.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 }
 
 void SetCalculator::eval()
@@ -179,7 +210,6 @@ void SetCalculator::exit()
 
 void SetCalculator::printOperations() const
 {
-	m_ostr << "Number of Maximum operations: " << m_maxSizeOfOperations << "\n";
 	m_ostr << "List of available set operations:\n";
 	for (decltype(m_operations.size()) i = 0; i < m_operations.size(); ++i)
 	{

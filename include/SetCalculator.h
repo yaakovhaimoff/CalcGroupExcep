@@ -5,7 +5,6 @@
 #include <string>
 #include <iosfwd>
 #include <optional>
-#include "MyExcep.h"
 
 const int max = 100;
 const int min = 3;
@@ -66,7 +65,7 @@ private:
 
     using ActionMap = std::vector<ActionDetails>;
     using OperationList = std::vector<std::shared_ptr<Operation>>;
-
+    using OpenFile = std::ifstream;
     const ActionMap m_actions;
     OperationList m_operations;
     
@@ -74,8 +73,8 @@ private:
     bool m_user = true;
     bool m_fileNotOpen = false;
     bool m_readingInFile = false;
-    int m_maxSizeOfOperations = 0;
     int m_lineInFile = 0;
+    int m_maxSizeOfOperations = 0;
     
     std::istream& m_istr;
     std::ostream& m_ostr;
@@ -83,6 +82,11 @@ private:
     std::optional<int> readOperationIndex() const;
     Action readAction() const;
     void runAction(Action action);
+    OpenFile openFile();
+    void checkIfFileOpened(std::ifstream&);
+    void runFile(SetCalculator&);
+    void setCalcBackToUser(const SetCalculator&);
+    void catchIosBase(const char*);
     void checkIfAddedOperation();
     bool checkNumOfOperation()const;
     void handleErrorInFile();
