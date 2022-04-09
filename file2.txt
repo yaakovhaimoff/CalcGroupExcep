@@ -1,5 +1,2 @@
-resize 4
 uni 0 0
-uni 1 2
 diff 2 3
-eval r

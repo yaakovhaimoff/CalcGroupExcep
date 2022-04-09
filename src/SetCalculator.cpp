@@ -19,7 +19,7 @@ namespace rng = std::ranges;
 
 SetCalculator::SetCalculator(std::istream& istr, std::ostream& ostr, const bool user)
 	: m_actions(createActions()), m_operations(createOperations()),
-	m_istr(istr), m_ostr(ostr), m_user(user)
+	m_istr(istr), m_ostr(ostr), m_user(user), m_RunningRefForFile(&m_running)
 {}
 
 void SetCalculator::run()
@@ -44,13 +44,17 @@ void SetCalculator::run()
 			if (m_readingInFile) handleErrorInFile();
 		}
 
-	} while (m_running && !m_istr.eof());
+	} while (m_running);
 }
 
 void SetCalculator::catchIosBase(const char* message)
 {
 	m_istr.clear();
 	m_istr.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (m_istr.eof()) {
+		m_running = false;
+		return;
+	}
 	m_fileNotOpen ? m_ostr << message : m_ostr << "#error you need to input a number\n";
 	m_fileNotOpen = false;
 	if (m_readingInFile)
@@ -69,13 +73,12 @@ void SetCalculator::handleErrorInFile()
 
 void SetCalculator::checkIfAddedOperation()
 {
-	if (m_maxSizeOfOperations < m_operations.size())
+	if (m_maxSizeOfOperations < m_operations->size())
 	{
-		m_operations.resize(m_operations.size() - 1);
+		m_operations->resize(m_operations->size() - 1);
 		m_ostr << "Number of Maximum operations: " << m_maxSizeOfOperations << "\n";
 		throw std::out_of_range("you have reached the maximum operations.\ndelete operations in order to add more");
 	}
-
 }
 
 void SetCalculator::setMaxNumOfOperations()
@@ -99,7 +102,7 @@ void SetCalculator::runAction()
 
 bool SetCalculator::checkNumOfOperation()const
 {
-	return m_maxSizeOfOperations < max&& m_maxSizeOfOperations > min;
+	return m_maxSizeOfOperations < max && m_maxSizeOfOperations > min;
 }
 
 void SetCalculator::read()
@@ -131,8 +134,9 @@ void SetCalculator::checkIfFileOpened(std::ifstream& file)
 
 void SetCalculator::runFile(SetCalculator& fileCalc)
 {
-	fileCalc.m_readingInFile = true;
+	fileCalc.m_RunningRefForFile = m_RunningRefForFile;
 	fileCalc.m_operations = m_operations;
+	fileCalc.m_readingInFile = true;
 	fileCalc.m_maxSizeOfOperations = m_maxSizeOfOperations;
 	fileCalc.run();
 }
@@ -149,7 +153,7 @@ void SetCalculator::resize()
 	int maxNumOperations = m_maxSizeOfOperations;
 	char proceed;
 	setMaxNumOfOperations();
-	if (m_maxSizeOfOperations < m_operations.size()) {
+	if (m_maxSizeOfOperations < m_operations->size()) {
 		m_ostr << "New size is smaller then old size, do you want to proceed with this action? (y/n): ";
 		m_istr >> proceed;
 		proceed == 'y' ? deleteRestOperations() : setOldSize(maxNumOperations);
@@ -158,7 +162,7 @@ void SetCalculator::resize()
 
 void SetCalculator::deleteRestOperations()
 {
-	m_operations.resize(m_maxSizeOfOperations);
+	m_operations->resize(m_maxSizeOfOperations);
 }
 
 void SetCalculator::setOldSize(const int maxNumOperations)
@@ -172,7 +176,7 @@ void SetCalculator::eval()
 {
 	if (auto index = readOperationIndex(); index)
 	{
-		const auto& operation = m_operations[*index];
+		const auto operation = m_operations->at(*index);
 		auto inputs = std::vector<Set>();
 		for (auto i = 0; i < operation->inputCount(); ++i)
 		{
@@ -188,7 +192,7 @@ void SetCalculator::del()
 {
 	if (auto i = readOperationIndex(); i)
 	{
-		m_operations.erase(m_operations.begin() + *i);
+		m_operations->erase(m_operations->begin() + *i);
 	}
 }
 
@@ -204,6 +208,8 @@ void SetCalculator::help()
 
 void SetCalculator::exit()
 {
+	if (m_readingInFile)
+		(*m_RunningRefForFile) = false;
 	m_ostr << "Goodbye!\n";
 	m_running = false;
 }
@@ -211,11 +217,11 @@ void SetCalculator::exit()
 void SetCalculator::printOperations() const
 {
 	m_ostr << "List of available set operations:\n";
-	for (decltype(m_operations.size()) i = 0; i < m_operations.size(); ++i)
+	for (decltype(m_operations->size()) i = 0; i < m_operations->size(); ++i)
 	{
 		m_ostr << i << ".\t";
 		auto gen = NameGenerator();
-		m_operations[i]->print(m_ostr, gen);
+		m_operations->at(i)->print(m_ostr, gen);
 		m_ostr << '\n';
 	}
 	m_ostr << '\n';
@@ -225,7 +231,7 @@ std::optional<int> SetCalculator::readOperationIndex() const
 {
 	auto i = 0;
 	m_istr >> i;
-	if (i >= m_operations.size())
+	if (i >= m_operations->size())
 		throw std::invalid_argument("Operation " + std::to_string(i) + " doesn't exist\n");
 
 	return i;
@@ -338,12 +344,13 @@ SetCalculator::ActionMap SetCalculator::createActions()
 	};
 }
 
-SetCalculator::OperationList SetCalculator::createOperations()
+SetCalculator::OperationListPtr SetCalculator::createOperations()
 {
-	return OperationList
+	OperationList vec
 	{
 		std::make_shared<Union>(std::make_shared<Identity>(), std::make_shared<Identity>()),
 		std::make_shared<Intersection>(std::make_shared<Identity>(), std::make_shared<Identity>()),
 		std::make_shared<Difference>(std::make_shared<Identity>(), std::make_shared<Identity>())
 	};
+	return std::make_shared<OperationList>(vec);
 }

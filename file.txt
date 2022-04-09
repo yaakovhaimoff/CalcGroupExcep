@@ -9,4 +9,4 @@ eval r
 uni 0 3
 eval 0 2 2 3 1 4
 read
-C:\Users\roibe\Desktop\exps\file2.txt
+C:\Users\hyaak\OneDrive\School\year2\semester2\ex3\file2.txt
